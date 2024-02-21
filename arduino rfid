@@ -1,0 +1,68 @@
+////.....................arduino....................
+#include <SPI.h>
+#include <MFRC522.h>
+#include <Servo.h>
+
+#define SS 10
+#define RST 9
+Servo myservo;
+Servo myservo1;
+MFRC522 mfrc522(SS, RST);
+MFRC522::MIFARE_Key key;
+String tag;
+int IRSensor = 2;
+
+void setup() {
+  Serial.begin(115200);
+  
+  myservo.attach(7);
+  myservo1.attach(3);
+  pinMode(IRSensor, INPUT);
+  SPI.begin();
+  mfrc522.PCD_Init();
+  myservo.write(0);
+  myservo1.write(0);
+}
+
+void loop() {
+  int sensorStatus = digitalRead(IRSensor);
+ 
+  Serial.println(sensorStatus);
+  if (sensorStatus == 0) {
+    while (digitalRead(IRSensor) == 0) {
+      myservo1.write(90);
+    }
+    delay(3000);
+  }
+  else {
+    myservo1.write(0);
+  }
+  // Check for new cards
+  if (!mfrc522.PICC_IsNewCardPresent())
+    return;
+
+  if (mfrc522.PICC_ReadCardSerial()) {
+    for (byte i = 0; i < 4; i++) {
+      tag += mfrc522.uid.uidByte[i];
+    }
+    //    Serial.println(tag);
+    //    131169877
+    //9925364189
+    if (tag == "131169877" || tag == "9925364189") {
+      Serial.println("Gate Opening");
+      myservo.write(90);
+      delay(2000);
+      myservo.write(0);
+    }
+    else {
+      Serial.println("You are not register yet!!");
+    }
+
+  }
+  tag = "";
+  mfrc522.PICC_HaltA();
+  mfrc522.PCD_StopCrypto1();
+  delay(500);
+
+}
+  
